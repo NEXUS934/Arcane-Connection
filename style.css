@@ -402,3 +402,69 @@ body{
     transform:scale(1.05);
 
 }
+
+.sidebar{
+
+    width:220px;
+
+    transition:.3s;
+}
+
+#toggleSidebar{
+
+    width:40px;
+
+    height:40px;
+
+    border:none;
+
+    border-radius:10px;
+
+    background:#ff0055;
+
+    color:white;
+
+    cursor:pointer;
+
+    margin-bottom:20px;
+}
+
+.sidebar.closed{
+
+    width:70px;
+
+    overflow:hidden;
+}
+
+.sidebar.closed h1{
+
+    display:none;
+}
+
+.sidebar.closed #newNodeBtn{
+
+    display:none;
+}
+
+.sidebar.closed .avatar-container{
+
+    display:none;
+}
+
+#folderFilter{
+
+    width:100%;
+
+    margin-top:10px;
+
+    padding:10px;
+
+    border:none;
+
+    border-radius:10px;
+
+    background:
+    rgba(255,255,255,.05);
+
+    color:white;
+}

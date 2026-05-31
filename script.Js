@@ -34,11 +34,89 @@ function saveNodes(){
 
 /* RENDER */
 
+const folderFilter =
+document.getElementById(
+  "folderFilter"
+);
+
+
+function updateFolders(){
+
+  const folders = [
+
+    ...new Set(
+
+      nodes.map(
+
+        node =>
+
+        node.folder || "Geral"
+
+      )
+
+    )
+
+  ];
+
+  folderFilter.innerHTML =
+
+  `
+  <option value="Todos">
+    Todos
+  </option>
+  `;
+
+  folders.forEach(folder=>{
+
+    folderFilter.innerHTML +=
+
+    `
+    <option value="${folder}">
+      📂 ${folder}
+    </option>
+    `;
+
+  });
+
+}
+
+
+
 function renderNodes(){
+
+  const selectedFolder =
+
+folderFilter.value;
 
   canvas.innerHTML = "";
 
-  nodes.forEach(node=>{
+  nodes
+  
+  .filter(node=>{
+
+  return (
+
+    selectedFolder === "Todos"
+
+    ||
+
+    node.folder === selectedFolder
+
+  );
+
+})
+
+
+  .forEach(node=>{
+
+    if(!node.folder)
+  node.folder = "Geral";
+
+if(!node.files)
+  node.files = [];
+
+if(!node.links)
+  node.links = [];
 
     const div =
     document.createElement(
@@ -212,6 +290,8 @@ function renderNodes(){
 
           saveNodes();
 
+          updateFolders();
+
           renderNodes();
 
         };
@@ -275,6 +355,8 @@ function renderNodes(){
 
         saveNodes();
 
+        updateFolders();
+
         renderNodes();
 
       }
@@ -313,31 +395,37 @@ newNodeBtn.addEventListener(
 
     if(!title) return;
 
-    const content =
+   const content =
+prompt("Conteúdo:") || "";
 
-    prompt(
-      "Conteúdo:"
-    ) || "";
+const folder =
+prompt(
+  "Pasta:"
+) || "Geral";
 
-    nodes.push({
+nodes.push({
 
-      id:Date.now(),
+  id:Date.now(),
 
-      title,
+  title,
 
-      content,
+  content,
 
-      x:300,
+  folder,
 
-      y:150,
+  x:300,
 
-      files:[],
+  y:150,
 
-      links:[]
+  files:[],
 
-    });
+  links:[]
+
+});
 
     saveNodes();
+
+    updateFolders();
 
     renderNodes();
 
@@ -439,5 +527,31 @@ function enableDrag(
   );
 
 }
+
+const toggleSidebar =
+document.getElementById(
+  "toggleSidebar"
+);
+
+const sidebar =
+document.querySelector(
+  ".sidebar"
+);
+
+toggleSidebar.addEventListener(
+
+  "click",
+
+  ()=>{
+
+    sidebar.classList.toggle(
+      "closed"
+    );
+
+  }
+
+);
+
+updateFolders();
 
 renderNodes();
