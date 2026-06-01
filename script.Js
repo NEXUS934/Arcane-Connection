@@ -1,3 +1,80 @@
+async function loadNodes(){
+
+  const snapshot = await window.getDocs(
+
+    window.collection(
+      window.db,
+      "blocos"
+    )
+
+  );
+
+  nodes = [];
+
+  snapshot.forEach(doc=>{
+
+    nodes.push({
+
+      id: doc.id,
+
+      ...doc.data()
+
+    });
+
+  });
+
+console.log("Blocos carregados:", nodes);
+
+console.log(
+  "Primeiro bloco:",
+  nodes[0]
+);
+
+console.log(
+  "X:",
+  nodes[0].x
+);
+
+console.log(
+  "Y:",
+  nodes[0].y
+);
+
+  updateFolders();
+
+  renderNodes();
+
+}
+
+async function saveNodeToFirebase(node){
+
+  try{
+
+    await window.addDoc(
+
+      window.collection(
+        window.db,
+        "blocos"
+      ),
+
+      node
+
+    );
+
+    console.log(
+      "Bloco salvo no Firebase"
+    );
+
+  }
+
+  catch(error){
+
+    console.error(error);
+
+  }
+
+}
+
 const canvas =
 document.getElementById(
   "canvas"
@@ -8,29 +85,14 @@ document.getElementById(
   "newNodeBtn"
 );
 
-let nodes =
+console.log("Script carregado");
+console.log(window.addDoc);
 
-JSON.parse(
-
-localStorage.getItem(
-  "nexusNodes"
-)
-
-) || [];
+let nodes = [];
 
 /* SALVAR */
 
-function saveNodes(){
-
-  localStorage.setItem(
-
-    "nexusNodes",
-
-    JSON.stringify(nodes)
-
-  );
-
-}
+function saveNodes(){}
 
 /* RENDER */
 
@@ -80,7 +142,63 @@ function updateFolders(){
 
 }
 
+async function updateNodeInFirebase(node){
 
+  try{
+
+    await window.updateDoc(
+
+      window.doc(
+        window.db,
+        "blocos",
+        node.id
+      ),
+
+      {
+        title: node.title,
+        content: node.content,
+        folder: node.folder,
+        x: node.x,
+        y: node.y,
+        files: node.files,
+        links: node.links
+      }
+
+    );
+
+  }
+
+  catch(error){
+
+    console.error(error);
+
+  }
+
+}
+
+async function deleteNodeInFirebase(id){
+
+  try{
+
+    await window.deleteDoc(
+
+      window.doc(
+        window.db,
+        "blocos",
+        id
+      )
+
+    );
+
+  }
+
+  catch(error){
+
+    console.error(error);
+
+  }
+
+}
 
 function renderNodes(){
 
@@ -234,10 +352,10 @@ if(!node.links)
 
       ()=>{
 
-        node.title =
-        titleInput.value;
+node.title =
+titleInput.value;
 
-        saveNodes();
+updateNodeInFirebase(node);
 
       }
 
@@ -251,10 +369,10 @@ if(!node.links)
 
       ()=>{
 
-        node.content =
-        contentInput.value;
+node.content =
+contentInput.value;
 
-        saveNodes();
+updateNodeInFirebase(node);
 
       }
 
@@ -371,11 +489,14 @@ if(!node.links)
 
     );
 
+    console.log("Renderizando:", node);
+
     canvas.appendChild(
       div
     );
 
   });
+
 
 }
 
@@ -385,7 +506,7 @@ newNodeBtn.addEventListener(
 
   "click",
 
-  ()=>{
+ async ()=>{
 
     const title =
 
@@ -403,9 +524,7 @@ prompt(
   "Pasta:"
 ) || "Geral";
 
-nodes.push({
-
-  id:Date.now(),
+const newNode = {
 
   title,
 
@@ -421,13 +540,15 @@ nodes.push({
 
   links:[]
 
-});
+};
 
-    saveNodes();
+await saveNodeToFirebase(
+  newNode
+);
 
-    updateFolders();
+await loadNodes();
 
-    renderNodes();
+updateFolders();
 
   }
 
@@ -552,6 +673,62 @@ toggleSidebar.addEventListener(
 
 );
 
-updateFolders();
+const waitFirebaseLoad = setInterval(()=>{
 
-renderNodes();
+  if(window.firebaseReady){
+
+    clearInterval(waitFirebaseLoad);
+
+    loadNodes();
+
+
+  }
+
+},100);
+
+async function testFirebase(){
+
+  try{
+
+   await window.addDoc(
+
+  window.collection(
+    window.db,
+    "teste"
+  ),
+
+  {
+    mensagem:
+    "Arcane funcionando"
+  }
+
+);
+
+    console.log(
+      "Firebase conectado!"
+    );
+
+  }
+
+  catch(error){
+
+    console.error(
+      error
+    );
+
+  }
+
+}
+
+
+const waitFirebase = setInterval(() => {
+
+  if(window.firebaseReady){
+
+    clearInterval(waitFirebase);
+
+    testFirebase();
+
+  }
+
+}, 100);
