@@ -17,9 +17,34 @@ href="style.css">
 
 <body>
 
+  
 <div class="sidebar">
 
+    <button id="toggleSidebar">
+    ☰
+</button>
+
+    <select id="folderFilter">
+
+    <option value="Todos">
+        Todos
+    </option>
+
+</select>
+
+<div class="avatar-container">
+
+    <div class="avatar-ring"></div>
+
+    <div class="avatar"></div>
+
+</div>
+
     <h1>Arcane Connection</h1>
+
+    <button id="loginBtn">
+  Entrar com Google
+</button>
 
     <button id="newNodeBtn">
         + Novo Bloco
@@ -38,6 +63,8 @@ href="style.css">
     ></div>
 
 </div>
+
+<script type="module" src="firebase.js"></script>
 
 <script src="script.js"></script>
 

@@ -1,3 +1,84 @@
+async function loadNodes(){
+
+  const snapshot = await window.getDocs(
+
+    window.collection(
+      window.db,
+      "blocos"
+    )
+
+  );
+
+  nodes = [];
+
+  snapshot.forEach(doc=>{
+
+    nodes.push({
+
+      id: doc.id,
+
+      ...doc.data()
+
+    });
+
+  });
+
+console.log("Blocos carregados:", nodes);
+
+if(nodes.length > 0){
+
+  console.log(
+    "Primeiro bloco:",
+    nodes[0]
+  );
+
+  console.log(
+    "X:",
+    nodes[0].x
+  );
+
+  console.log(
+    "Y:",
+    nodes[0].y
+  );
+
+}
+
+  updateFolders();
+
+  renderNodes();
+
+}
+
+async function saveNodeToFirebase(node){
+
+  try{
+
+    await window.addDoc(
+
+      window.collection(
+        window.db,
+        "blocos"
+      ),
+
+      node
+
+    );
+
+    console.log(
+      "Bloco salvo no Firebase"
+    );
+
+  }
+
+  catch(error){
+
+    console.error(error);
+
+  }
+
+}
+
 const canvas =
 document.getElementById(
   "canvas"
@@ -8,37 +89,159 @@ document.getElementById(
   "newNodeBtn"
 );
 
-let nodes =
+const loginBtn =
+document.getElementById(
+  "loginBtn"
+);
 
-JSON.parse(
+console.log("Script carregado");
+console.log(window.addDoc);
 
-localStorage.getItem(
-  "nexusNodes"
-)
+let nodes = [];
 
-) || [];
 
-/* SALVAR */
-
-function saveNodes(){
-
-  localStorage.setItem(
-
-    "nexusNodes",
-
-    JSON.stringify(nodes)
-
-  );
-
-}
 
 /* RENDER */
 
+const folderFilter =
+document.getElementById(
+  "folderFilter"
+);
+
+
+function updateFolders(){
+
+  const folders = [
+
+    ...new Set(
+
+      nodes.map(
+
+        node =>
+
+        node.folder || "Geral"
+
+      )
+
+    )
+
+  ];
+
+  folderFilter.innerHTML =
+
+  `
+  <option value="Todos">
+    Todos
+  </option>
+  `;
+
+  folders.forEach(folder=>{
+
+    folderFilter.innerHTML +=
+
+    `
+    <option value="${folder}">
+      📂 ${folder}
+    </option>
+    `;
+
+  });
+
+}
+
+async function updateNodeInFirebase(node){
+
+  try{
+
+    await window.updateDoc(
+
+      window.doc(
+        window.db,
+        "blocos",
+        node.id
+      ),
+
+      {
+        title: node.title,
+        content: node.content,
+        folder: node.folder,
+        x: node.x,
+        y: node.y,
+        files: node.files,
+        links: node.links
+      }
+
+    );
+
+  }
+
+  catch(error){
+
+    console.error(error);
+
+  }
+
+}
+
+async function deleteNodeInFirebase(id){
+
+  try{
+
+    await window.deleteDoc(
+
+      window.doc(
+        window.db,
+        "blocos",
+        id
+      )
+
+    );
+
+  }
+
+  catch(error){
+
+    console.error(error);
+
+  }
+
+}
+
 function renderNodes(){
+
+  const selectedFolder =
+
+folderFilter.value;
 
   canvas.innerHTML = "";
 
-  nodes.forEach(node=>{
+  nodes
+  
+  .filter(node=>{
+
+  return (
+
+    selectedFolder === "Todos"
+
+    ||
+
+    node.folder === selectedFolder
+
+  );
+
+})
+
+
+  .forEach(node=>{
+
+    if(!node.folder)
+  node.folder = "Geral";
+
+if(!node.files)
+  node.files = [];
+
+if(!node.links)
+  node.links = [];
 
     const div =
     document.createElement(
@@ -156,10 +359,10 @@ function renderNodes(){
 
       ()=>{
 
-        node.title =
-        titleInput.value;
+node.title =
+titleInput.value;
 
-        saveNodes();
+updateNodeInFirebase(node);
 
       }
 
@@ -173,10 +376,10 @@ function renderNodes(){
 
       ()=>{
 
-        node.content =
-        contentInput.value;
+node.content =
+contentInput.value;
 
-        saveNodes();
+updateNodeInFirebase(node);
 
       }
 
@@ -198,23 +401,25 @@ function renderNodes(){
         const reader =
         new FileReader();
 
-        reader.onload =
+reader.onload =
 
-        function(e){
+async function(e){
 
-          node.files.push({
+  node.files.push({
 
-            name:file.name,
+    name:file.name,
 
-            data:e.target.result
+    data:e.target.result
 
-          });
+  });
 
-          saveNodes();
+  await updateNodeInFirebase(
+    node
+  );
 
-          renderNodes();
+  renderNodes();
 
-        };
+};
 
         reader.readAsDataURL(
           file
@@ -230,7 +435,7 @@ function renderNodes(){
 
       "keydown",
 
-      (e)=>{
+     async (e)=>{
 
         if(
           e.key === "Enter"
@@ -240,15 +445,17 @@ function renderNodes(){
             !linkInput.value
           ) return;
 
-          node.links.push(
+node.links.push(
 
-            linkInput.value
+  linkInput.value
 
-          );
+);
 
-          saveNodes();
+await updateNodeInFirebase(
+  node
+);
 
-          renderNodes();
+renderNodes();
 
         }
 
@@ -258,28 +465,21 @@ function renderNodes(){
 
     /* EXCLUIR */
 
-    deleteBtn.addEventListener(
+deleteBtn.addEventListener(
 
-      "click",
+  "click",
 
-      ()=>{
+  async ()=>{
 
-        nodes =
-
-        nodes.filter(
-
-          n =>
-          n.id !== node.id
-
-        );
-
-        saveNodes();
-
-        renderNodes();
-
-      }
-
+    await deleteNodeInFirebase(
+      node.id
     );
+
+    await loadNodes();
+
+  }
+
+);
 
     enableDrag(
 
@@ -289,11 +489,14 @@ function renderNodes(){
 
     );
 
+    console.log("Renderizando:", node);
+
     canvas.appendChild(
       div
     );
 
   });
+
 
 }
 
@@ -303,7 +506,7 @@ newNodeBtn.addEventListener(
 
   "click",
 
-  ()=>{
+ async ()=>{
 
     const title =
 
@@ -313,33 +516,39 @@ newNodeBtn.addEventListener(
 
     if(!title) return;
 
-    const content =
+   const content =
+prompt("Conteúdo:") || "";
 
-    prompt(
-      "Conteúdo:"
-    ) || "";
+const folder =
+prompt(
+  "Pasta:"
+) || "Geral";
 
-    nodes.push({
+const newNode = {
 
-      id:Date.now(),
+  title,
 
-      title,
+  content,
 
-      content,
+  folder,
 
-      x:300,
+  x:300,
 
-      y:150,
+  y:150,
 
-      files:[],
+  files:[],
 
-      links:[]
+  links:[]
 
-    });
+};
 
-    saveNodes();
+await saveNodeToFirebase(
+  newNode
+);
 
-    renderNodes();
+await loadNodes();
+
+updateFolders();
 
   }
 
@@ -348,43 +557,32 @@ newNodeBtn.addEventListener(
 /* DRAG */
 
 function enableDrag(
-
   element,
-
   nodeId
-
 ){
 
   let offsetX;
   let offsetY;
 
   element.addEventListener(
-
     "mousedown",
-
     (e)=>{
 
       offsetX =
-
       e.clientX -
-
       element.offsetLeft;
 
       offsetY =
-
       e.clientY -
-
       element.offsetTop;
 
       function move(ev){
 
         const x =
-
         ev.clientX -
         offsetX;
 
         const y =
-
         ev.clientY -
         offsetY;
 
@@ -395,22 +593,33 @@ function enableDrag(
         y + "px";
 
         const node =
-
         nodes.find(
-
-          n =>
-          n.id === nodeId
-
+          n => n.id === nodeId
         );
 
-        node.x = x;
-        node.y = y;
+        if(node){
+
+          node.x = x;
+          node.y = y;
+
+        }
 
       }
 
-      function stop(){
+      async function stop(){
 
-        saveNodes();
+        const node =
+        nodes.find(
+          n => n.id === nodeId
+        );
+
+        if(node){
+
+          await updateNodeInFirebase(
+            node
+          );
+
+        }
 
         document.removeEventListener(
           "mousemove",
@@ -435,9 +644,61 @@ function enableDrag(
       );
 
     }
-
   );
 
 }
 
-renderNodes();
+loginBtn.addEventListener(
+
+  "click",
+
+  async ()=>{
+
+    try{
+
+      const result =
+
+      await window.signInWithPopup(
+
+        window.auth,
+
+        window.provider
+
+      );
+
+      console.log(
+
+        "Logado:",
+
+        result.user.displayName
+
+      );
+
+      console.log(
+  "UID:",
+  result.user.uid
+);
+
+    }
+
+    catch(error){
+
+      console.error(error);
+
+    }
+
+  }
+
+);
+
+const waitFirebaseLoad = setInterval(()=>{
+
+  if(window.firebaseReady){
+
+    clearInterval(waitFirebaseLoad);
+
+    loadNodes();
+
+  }
+
+},100);
