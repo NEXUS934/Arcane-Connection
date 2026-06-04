@@ -451,6 +451,14 @@ body{
     display:none;
 }
 
+.sidebar.closed #loginBtn{
+    display:none;
+}
+
+.sidebar.closed #folderFilter{
+    display:none;
+}
+
 #folderFilter{
 
     width:100%;
