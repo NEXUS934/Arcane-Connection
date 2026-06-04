@@ -25,20 +25,24 @@ async function loadNodes(){
 
 console.log("Blocos carregados:", nodes);
 
-console.log(
-  "Primeiro bloco:",
-  nodes[0]
-);
+if(nodes.length > 0){
 
-console.log(
-  "X:",
-  nodes[0].x
-);
+  console.log(
+    "Primeiro bloco:",
+    nodes[0]
+  );
 
-console.log(
-  "Y:",
-  nodes[0].y
-);
+  console.log(
+    "X:",
+    nodes[0].x
+  );
+
+  console.log(
+    "Y:",
+    nodes[0].y
+  );
+
+}
 
   updateFolders();
 
@@ -85,14 +89,17 @@ document.getElementById(
   "newNodeBtn"
 );
 
+const loginBtn =
+document.getElementById(
+  "loginBtn"
+);
+
 console.log("Script carregado");
 console.log(window.addDoc);
 
 let nodes = [];
 
-/* SALVAR */
 
-function saveNodes(){}
 
 /* RENDER */
 
@@ -394,25 +401,25 @@ updateNodeInFirebase(node);
         const reader =
         new FileReader();
 
-        reader.onload =
+reader.onload =
 
-        function(e){
+async function(e){
 
-          node.files.push({
+  node.files.push({
 
-            name:file.name,
+    name:file.name,
 
-            data:e.target.result
+    data:e.target.result
 
-          });
+  });
 
-          saveNodes();
+  await updateNodeInFirebase(
+    node
+  );
 
-          updateFolders();
+  renderNodes();
 
-          renderNodes();
-
-        };
+};
 
         reader.readAsDataURL(
           file
@@ -428,7 +435,7 @@ updateNodeInFirebase(node);
 
       "keydown",
 
-      (e)=>{
+     async (e)=>{
 
         if(
           e.key === "Enter"
@@ -438,15 +445,17 @@ updateNodeInFirebase(node);
             !linkInput.value
           ) return;
 
-          node.links.push(
+node.links.push(
 
-            linkInput.value
+  linkInput.value
 
-          );
+);
 
-          saveNodes();
+await updateNodeInFirebase(
+  node
+);
 
-          renderNodes();
+renderNodes();
 
         }
 
@@ -456,30 +465,21 @@ updateNodeInFirebase(node);
 
     /* EXCLUIR */
 
-    deleteBtn.addEventListener(
+deleteBtn.addEventListener(
 
-      "click",
+  "click",
 
-      ()=>{
+  async ()=>{
 
-        nodes =
-
-        nodes.filter(
-
-          n =>
-          n.id !== node.id
-
-        );
-
-        saveNodes();
-
-        updateFolders();
-
-        renderNodes();
-
-      }
-
+    await deleteNodeInFirebase(
+      node.id
     );
+
+    await loadNodes();
+
+  }
+
+);
 
     enableDrag(
 
@@ -557,43 +557,32 @@ updateFolders();
 /* DRAG */
 
 function enableDrag(
-
   element,
-
   nodeId
-
 ){
 
   let offsetX;
   let offsetY;
 
   element.addEventListener(
-
     "mousedown",
-
     (e)=>{
 
       offsetX =
-
       e.clientX -
-
       element.offsetLeft;
 
       offsetY =
-
       e.clientY -
-
       element.offsetTop;
 
       function move(ev){
 
         const x =
-
         ev.clientX -
         offsetX;
 
         const y =
-
         ev.clientY -
         offsetY;
 
@@ -604,22 +593,33 @@ function enableDrag(
         y + "px";
 
         const node =
-
         nodes.find(
-
-          n =>
-          n.id === nodeId
-
+          n => n.id === nodeId
         );
 
-        node.x = x;
-        node.y = y;
+        if(node){
+
+          node.x = x;
+          node.y = y;
+
+        }
 
       }
 
-      function stop(){
+      async function stop(){
 
-        saveNodes();
+        const node =
+        nodes.find(
+          n => n.id === nodeId
+        );
+
+        if(node){
+
+          await updateNodeInFirebase(
+            node
+          );
+
+        }
 
         document.removeEventListener(
           "mousemove",
@@ -644,30 +644,48 @@ function enableDrag(
       );
 
     }
-
   );
 
 }
 
-const toggleSidebar =
-document.getElementById(
-  "toggleSidebar"
-);
-
-const sidebar =
-document.querySelector(
-  ".sidebar"
-);
-
-toggleSidebar.addEventListener(
+loginBtn.addEventListener(
 
   "click",
 
-  ()=>{
+  async ()=>{
 
-    sidebar.classList.toggle(
-      "closed"
-    );
+    try{
+
+      const result =
+
+      await window.signInWithPopup(
+
+        window.auth,
+
+        window.provider
+
+      );
+
+      console.log(
+
+        "Logado:",
+
+        result.user.displayName
+
+      );
+
+      console.log(
+  "UID:",
+  result.user.uid
+);
+
+    }
+
+    catch(error){
+
+      console.error(error);
+
+    }
 
   }
 
@@ -681,54 +699,6 @@ const waitFirebaseLoad = setInterval(()=>{
 
     loadNodes();
 
-
   }
 
 },100);
-
-async function testFirebase(){
-
-  try{
-
-   await window.addDoc(
-
-  window.collection(
-    window.db,
-    "teste"
-  ),
-
-  {
-    mensagem:
-    "Arcane funcionando"
-  }
-
-);
-
-    console.log(
-      "Firebase conectado!"
-    );
-
-  }
-
-  catch(error){
-
-    console.error(
-      error
-    );
-
-  }
-
-}
-
-
-const waitFirebase = setInterval(() => {
-
-  if(window.firebaseReady){
-
-    clearInterval(waitFirebase);
-
-    testFirebase();
-
-  }
-
-}, 100);
